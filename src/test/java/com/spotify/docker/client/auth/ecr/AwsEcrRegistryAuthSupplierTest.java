@@ -36,19 +36,19 @@ public class AwsEcrRegistryAuthSupplierTest {
 
   static {
     GOOD_AUTH = new AuthorizationData()
-      .withAuthorizationToken("QVdTOnNvbWVwYXNzd29yZA==") // "AWS:somepassword"
-      .withExpiresAt(Instant.now().plus(3600 * 1000 * 12).toDate())
-      .withProxyEndpoint("https://12345.dkr.ecr.us-east-1.amazonaws.com/");
+        .withAuthorizationToken("QVdTOnNvbWVwYXNzd29yZA==") // "AWS:somepassword"
+        .withExpiresAt(Instant.now().plus(3600 * 1000 * 12).toDate())
+        .withProxyEndpoint("https://12345.dkr.ecr.us-east-1.amazonaws.com/");
 
     NULL_AUTH = new AuthorizationData()
-      .withAuthorizationToken(null)
-      .withExpiresAt(Instant.now().plus(3600 * 1000 * 12).toDate())
-      .withProxyEndpoint("https://12345.dkr.ecr.us-east-1.amazonaws.com/");
+        .withAuthorizationToken(null)
+        .withExpiresAt(Instant.now().plus(3600 * 1000 * 12).toDate())
+        .withProxyEndpoint("https://12345.dkr.ecr.us-east-1.amazonaws.com/");
 
     BAD_AUTH = new AuthorizationData()
-      .withAuthorizationToken("aW52YWxpZA==") // "invalid"
-      .withExpiresAt(Instant.now().plus(3600 * 1000 * 12).toDate())
-      .withProxyEndpoint("https://12345.dkr.ecr.us-east-1.amazonaws.com/");
+        .withAuthorizationToken("aW52YWxpZA==") // "invalid"
+        .withExpiresAt(Instant.now().plus(3600 * 1000 * 12).toDate())
+        .withProxyEndpoint("https://12345.dkr.ecr.us-east-1.amazonaws.com/");
   }
 
   @Mock
@@ -58,9 +58,9 @@ public class AwsEcrRegistryAuthSupplierTest {
   public void testAuthForNonEcrImage() throws DockerException {
     final FakeSleep sleep = new FakeSleep();
     final AwsEcrRegistryAuthSupplier supplier = AwsEcrRegistryAuthSupplier.builder()
-      .withClient(client)
-      .withSleep(sleep)
-      .build();
+        .withClient(client)
+        .withSleep(sleep)
+        .build();
 
     final RegistryAuth auth1 = supplier.authFor("team/project:latest");
     assertNull(auth1);
@@ -72,17 +72,18 @@ public class AwsEcrRegistryAuthSupplierTest {
   @Test
   public void testAuthForSuccessNoRetries() throws DockerException {
     final GetAuthorizationTokenResult result = new GetAuthorizationTokenResult()
-      .withAuthorizationData(GOOD_AUTH);
+        .withAuthorizationData(GOOD_AUTH);
 
     when(client.getAuthorizationToken(any(GetAuthorizationTokenRequest.class))).thenReturn(result);
 
     final FakeSleep sleep = new FakeSleep();
     final AwsEcrRegistryAuthSupplier supplier = AwsEcrRegistryAuthSupplier.builder()
-      .withClient(client)
-      .withSleep(sleep)
-      .build();
+        .withClient(client)
+        .withSleep(sleep)
+        .build();
 
-    final RegistryAuth auth = supplier.authFor("12345.dkr.ecr.us-east-1.amazonaws.com/team/project:latest");
+    final RegistryAuth auth = supplier.authFor(
+        "12345.dkr.ecr.us-east-1.amazonaws.com/team/project:latest");
     assertEquals("AWS", auth.username());
     assertEquals("somepassword", auth.password());
     assertEquals("https://12345.dkr.ecr.us-east-1.amazonaws.com/", auth.serverAddress());
@@ -91,20 +92,21 @@ public class AwsEcrRegistryAuthSupplierTest {
   @Test
   public void testAuthForSuccessOneRetry() throws DockerException {
     final GetAuthorizationTokenResult result = new GetAuthorizationTokenResult()
-      .withAuthorizationData(GOOD_AUTH);
+        .withAuthorizationData(GOOD_AUTH);
 
     when(client.getAuthorizationToken(any(GetAuthorizationTokenRequest.class)))
-      .thenThrow(new ServerException("Service unavailable"))
-      .thenReturn(result);
+        .thenThrow(new ServerException("Service unavailable"))
+        .thenReturn(result);
 
     final FakeSleep sleep = new FakeSleep();
     final AwsEcrRegistryAuthSupplier supplier = AwsEcrRegistryAuthSupplier.builder()
-      .withClient(client)
-      .withSleep(sleep)
-      .withMaxRetries(1)
-      .build();
+        .withClient(client)
+        .withSleep(sleep)
+        .withMaxRetries(1)
+        .build();
 
-    final RegistryAuth auth = supplier.authFor("12345.dkr.ecr.us-east-1.amazonaws.com/team/project:latest");
+    final RegistryAuth auth = supplier.authFor(
+        "12345.dkr.ecr.us-east-1.amazonaws.com/team/project:latest");
     assertEquals("AWS", auth.username());
     assertEquals("somepassword", auth.password());
     assertEquals("https://12345.dkr.ecr.us-east-1.amazonaws.com/", auth.serverAddress());
@@ -113,14 +115,14 @@ public class AwsEcrRegistryAuthSupplierTest {
   @Test(expected = DockerException.class)
   public void testAuthForServerException() throws DockerException {
     when(client.getAuthorizationToken(any(GetAuthorizationTokenRequest.class)))
-      .thenThrow(new ServerException("Service unavailable"));
+        .thenThrow(new ServerException("Service unavailable"));
 
     final FakeSleep sleep = new FakeSleep();
     final AwsEcrRegistryAuthSupplier supplier = AwsEcrRegistryAuthSupplier.builder()
-      .withClient(client)
-      .withSleep(sleep)
-      .withMaxRetries(1)
-      .build();
+        .withClient(client)
+        .withSleep(sleep)
+        .withMaxRetries(1)
+        .build();
 
     supplier.authFor("67890.dkr.ecr.us-west-2.amazonaws.com/team/project:latest");
   }
@@ -128,13 +130,13 @@ public class AwsEcrRegistryAuthSupplierTest {
   @Test(expected = DockerException.class)
   public void testAuthForParameterException() throws DockerException {
     when(client.getAuthorizationToken(any(GetAuthorizationTokenRequest.class)))
-      .thenThrow(new InvalidParameterException("Bad parameters"));
+        .thenThrow(new InvalidParameterException("Bad parameters"));
 
     final FakeSleep sleep = new FakeSleep();
     final AwsEcrRegistryAuthSupplier supplier = AwsEcrRegistryAuthSupplier.builder()
-      .withClient(client)
-      .withSleep(sleep)
-      .build();
+        .withClient(client)
+        .withSleep(sleep)
+        .build();
 
     supplier.authFor("12345.dkr.ecr.us-east-1.amazonaws.com/team/project:1.2.3");
   }
@@ -147,9 +149,9 @@ public class AwsEcrRegistryAuthSupplierTest {
 
     final FakeSleep sleep = new FakeSleep();
     final AwsEcrRegistryAuthSupplier supplier = AwsEcrRegistryAuthSupplier.builder()
-      .withClient(client)
-      .withSleep(sleep)
-      .build();
+        .withClient(client)
+        .withSleep(sleep)
+        .build();
 
     supplier.authFor("12345.dkr.ecr.us-east-1.amazonaws.com/team/project:latest");
   }
@@ -157,16 +159,16 @@ public class AwsEcrRegistryAuthSupplierTest {
   @Test(expected = DockerException.class)
   public void testAuthForNullAuthorizationData() throws DockerException {
     final GetAuthorizationTokenResult result = new GetAuthorizationTokenResult()
-      .withAuthorizationData(NULL_AUTH);
+        .withAuthorizationData(NULL_AUTH);
 
     when(client.getAuthorizationToken(any(GetAuthorizationTokenRequest.class)))
-      .thenReturn(result);
+        .thenReturn(result);
 
     final FakeSleep sleep = new FakeSleep();
     final AwsEcrRegistryAuthSupplier supplier = AwsEcrRegistryAuthSupplier.builder()
-      .withClient(client)
-      .withSleep(sleep)
-      .build();
+        .withClient(client)
+        .withSleep(sleep)
+        .build();
 
     supplier.authFor("12345.dkr.ecr.us-east-1.amazonaws.com/team/project:1.2.3");
   }
@@ -174,16 +176,16 @@ public class AwsEcrRegistryAuthSupplierTest {
   @Test(expected = DockerException.class)
   public void testAuthForMalformedAuthorizationData() throws DockerException {
     final GetAuthorizationTokenResult result = new GetAuthorizationTokenResult()
-      .withAuthorizationData(BAD_AUTH);
+        .withAuthorizationData(BAD_AUTH);
 
     when(client.getAuthorizationToken(any(GetAuthorizationTokenRequest.class)))
-      .thenReturn(result);
+        .thenReturn(result);
 
     final FakeSleep sleep = new FakeSleep();
     final AwsEcrRegistryAuthSupplier supplier = AwsEcrRegistryAuthSupplier.builder()
-      .withClient(client)
-      .withSleep(sleep)
-      .build();
+        .withClient(client)
+        .withSleep(sleep)
+        .build();
 
     supplier.authFor("12345.dkr.ecr.us-east-1.amazonaws.com/team/project:latest");
   }
@@ -191,16 +193,16 @@ public class AwsEcrRegistryAuthSupplierTest {
   @Test
   public void testAuthForSwarm() throws DockerException {
     final GetAuthorizationTokenResult result = new GetAuthorizationTokenResult()
-      .withAuthorizationData(GOOD_AUTH);
+        .withAuthorizationData(GOOD_AUTH);
 
     when(client.getAuthorizationToken(any(GetAuthorizationTokenRequest.class)))
-      .thenReturn(result);
+        .thenReturn(result);
 
     final FakeSleep sleep = new FakeSleep();
     final AwsEcrRegistryAuthSupplier supplier = AwsEcrRegistryAuthSupplier.builder()
-      .withClient(client)
-      .withSleep(sleep)
-      .build();
+        .withClient(client)
+        .withSleep(sleep)
+        .build();
 
     final RegistryAuth auth = supplier.authForSwarm();
     assertEquals("AWS", auth.username());
@@ -211,13 +213,13 @@ public class AwsEcrRegistryAuthSupplierTest {
   @Test
   public void testAuthForSwarmFailure() throws DockerException {
     when(client.getAuthorizationToken(any(GetAuthorizationTokenRequest.class)))
-      .thenThrow(new ServerException("Service unavailable"));
+        .thenThrow(new ServerException("Service unavailable"));
 
     final FakeSleep sleep = new FakeSleep();
     final AwsEcrRegistryAuthSupplier supplier = AwsEcrRegistryAuthSupplier.builder()
-      .withClient(client)
-      .withSleep(sleep)
-      .build();
+        .withClient(client)
+        .withSleep(sleep)
+        .build();
 
     final RegistryAuth auth = supplier.authForSwarm();
     assertNull(auth);
@@ -226,16 +228,16 @@ public class AwsEcrRegistryAuthSupplierTest {
   @Test
   public void testAuthForBuild() throws DockerException {
     final GetAuthorizationTokenResult result = new GetAuthorizationTokenResult()
-      .withAuthorizationData(GOOD_AUTH);
+        .withAuthorizationData(GOOD_AUTH);
 
     when(client.getAuthorizationToken(any(GetAuthorizationTokenRequest.class)))
-      .thenReturn(result);
+        .thenReturn(result);
 
     final FakeSleep sleep = new FakeSleep();
     final AwsEcrRegistryAuthSupplier supplier = AwsEcrRegistryAuthSupplier.builder()
-      .withClient(client)
-      .withSleep(sleep)
-      .build();
+        .withClient(client)
+        .withSleep(sleep)
+        .build();
 
     final RegistryConfigs configs = supplier.authForBuild();
     final RegistryAuth auth = configs.configs().get("12345.dkr.ecr.us-east-1.amazonaws.com");
@@ -249,13 +251,13 @@ public class AwsEcrRegistryAuthSupplierTest {
   @Test
   public void testAuthForBuildFailure() throws DockerException {
     when(client.getAuthorizationToken(any(GetAuthorizationTokenRequest.class)))
-      .thenThrow(new ServerException("Service unavailable"));
+        .thenThrow(new ServerException("Service unavailable"));
 
     final FakeSleep sleep = new FakeSleep();
     final AwsEcrRegistryAuthSupplier supplier = AwsEcrRegistryAuthSupplier.builder()
-      .withClient(client)
-      .withSleep(sleep)
-      .build();
+        .withClient(client)
+        .withSleep(sleep)
+        .build();
 
     final RegistryConfigs configs = supplier.authForBuild();
     assertTrue(configs.configs().isEmpty());

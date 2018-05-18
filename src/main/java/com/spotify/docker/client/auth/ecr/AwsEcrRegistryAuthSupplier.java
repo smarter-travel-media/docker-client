@@ -35,13 +35,13 @@ import com.spotify.docker.client.messages.RegistryConfigs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Nullable;
 
 /**
  * Implementation of a {@link RegistryAuthSupplier} that authenticates with Amazon
@@ -51,7 +51,7 @@ public class AwsEcrRegistryAuthSupplier implements RegistryAuthSupplier {
 
   private static final Logger log = LoggerFactory.getLogger(AwsEcrRegistryAuthSupplier.class);
 
-  private final static String ECR_DOMAIN = ".amazonaws.com";
+  private static final String ECR_DOMAIN = ".amazonaws.com";
   private final AmazonECR client;
   private final Base64Decoder decoder;
   private final Sleep sleep;
@@ -67,7 +67,7 @@ public class AwsEcrRegistryAuthSupplier implements RegistryAuthSupplier {
   }
 
   /**
-   * @return A new builder for constructing AWS ECR auth suppliers
+   * @return A new builder for constructing AWS ECR auth suppliers.
    */
   public static Builder builder() {
     return new Builder();
@@ -88,10 +88,10 @@ public class AwsEcrRegistryAuthSupplier implements RegistryAuthSupplier {
 
     final List<AuthorizationData> auths = response.getAuthorizationData();
     if (auths == null || auths.size() != 1) {
-      throw new DockerException("" +
-        "Didn't get expected number of AuthorizationData results from ECR. Expected 1 " +
-        "item but instead got " + (auths == null ? "[null]" : String.valueOf(auths.size())) +
-        ". Tried to fetch authorization for registry ID '" + registryId + "'."
+      throw new DockerException(""
+          + "Didn't get expected number of AuthorizationData results from ECR. Expected 1 "
+          + "item but instead got " + (auths == null ? "[null]" : String.valueOf(auths.size()))
+          + ". Tried to fetch authorization for registry ID '" + registryId + "'."
       );
     }
 
@@ -109,8 +109,8 @@ public class AwsEcrRegistryAuthSupplier implements RegistryAuthSupplier {
           throw e;
         }
 
-        log.debug("Sleeping for {} ms before retry because of  server error fetching  ECR " +
-          "token: {}", retryBackoffMillis, e.getMessage());
+        log.debug("Sleeping for {} ms before retry because of  server error fetching  ECR "
+            + "token: {}", retryBackoffMillis, e.getMessage());
         sleep.sleepMs(retryBackoffMillis);
         retries += 1;
       }
@@ -122,23 +122,28 @@ public class AwsEcrRegistryAuthSupplier implements RegistryAuthSupplier {
     final String base64 = data.getAuthorizationToken();
     final String decoded = decoder.decode(base64);
     if (decoded == null) {
-      throw new DockerException("Unexpected null authorization token for endpoint '" + endpoint + "'");
+      throw new DockerException(
+          "Unexpected null authorization token for endpoint '" + endpoint + "'"
+      );
     }
 
     // The token is a base64 encoded string of the format "user:password".
     final int userPasswordIndex = decoded.indexOf(':');
     if (userPasswordIndex == -1) {
-      throw new DockerException("Invalid format for authorization token for endpoint '" + endpoint + "'");
+      throw new DockerException(
+          "Invalid format for authorization token for endpoint '" + endpoint + "'"
+      );
     }
 
     final String username = decoded.substring(0, userPasswordIndex);
-    final String password = decoded.substring(userPasswordIndex + 1 /* +1 for the ':' itself */, decoded.length());
+    final String password = decoded.substring(
+        userPasswordIndex + 1 /* +1 for the ':' itself */, decoded.length());
 
     return RegistryAuth.builder()
-      .username(username)
-      .password(password)
-      .serverAddress(endpoint)
-      .build();
+        .username(username)
+        .password(password)
+        .serverAddress(endpoint)
+        .build();
   }
 
   private static boolean isEcrImage(ImageRef image) {
@@ -149,14 +154,16 @@ public class AwsEcrRegistryAuthSupplier implements RegistryAuthSupplier {
   /**
    * Get the AWS account ID from the provided image which will be used when requesting
    * authorization for a particular image (such as with {@link #authFor(String)}).
-   * <p>
-   * See https://docs.aws.amazon.com/AmazonECR/latest/userguide/Registries.html
+   *
+   * <p>See https://docs.aws.amazon.com/AmazonECR/latest/userguide/Registries.html
    */
   private static String parseAccountIdFromImage(ImageRef image) throws DockerException {
     final String registryName = image.getRegistryName();
     final int subdomainIndex = registryName.indexOf('.');
     if (subdomainIndex == -1) {
-      throw new DockerException("Could not parse AWS account ID from registry host " + registryName);
+      throw new DockerException(
+          "Could not parse AWS account ID from registry host " + registryName
+      );
     }
 
     return registryName.substring(0, subdomainIndex);
@@ -164,13 +171,13 @@ public class AwsEcrRegistryAuthSupplier implements RegistryAuthSupplier {
 
   /**
    * Get the host name and optional port of the provided server address.
-   * <p>
-   * This is used when constructing a RegistryConfigs instance mapping registry names to
+   *
+   * <p>This is used when constructing a RegistryConfigs instance mapping registry names to
    * the associated authentication information. Port is omitted when the original server
    * endpoint associated with the auth information doesn't include a port or when the port
    * is the default (HTTPS, 443).
-   * <p>
-   * See https://docs.docker.com/engine/api/v1.37/#section/Authentication
+   *
+   * <p>See https://docs.docker.com/engine/api/v1.37/#section/Authentication
    */
   private static String getRegistryName(URI serverAddress) {
     final int port = serverAddress.getPort();
@@ -198,7 +205,7 @@ public class AwsEcrRegistryAuthSupplier implements RegistryAuthSupplier {
       return authForRegistryId(null);
     } catch (DockerException e) {
       log.warn("Unable to get authentication data for AWS ECR registry, "
-        + "configuration for Swarm will not contain registry auth for ECR", e);
+          + "configuration for Swarm will not contain registry auth for ECR", e);
       return null;
     }
   }
@@ -211,7 +218,7 @@ public class AwsEcrRegistryAuthSupplier implements RegistryAuthSupplier {
       auth = authForRegistryId(null);
     } catch (DockerException e) {
       log.warn("Unable to get authentication data for AWS ECR registry, "
-        + "configuration for building images will not contain RegistryAuth for ECR", e);
+          + "configuration for building images will not contain RegistryAuth for ECR", e);
       return RegistryConfigs.empty();
     }
 
@@ -220,7 +227,7 @@ public class AwsEcrRegistryAuthSupplier implements RegistryAuthSupplier {
       serverAddress = new URI(auth.serverAddress());
     } catch (URISyntaxException e) {
       log.warn("Unable to parse server URL for AWS ECR registry, "
-        + "configuration for building images will not contain RegistryAuth for ECR", e);
+          + "configuration for building images will not contain RegistryAuth for ECR", e);
       return RegistryConfigs.empty();
     }
 
@@ -232,8 +239,8 @@ public class AwsEcrRegistryAuthSupplier implements RegistryAuthSupplier {
 
   /**
    * Builder for creating a new immutable {@link AwsEcrRegistryAuthSupplier} instance.
-   * <p>
-   * All values except the {@link AmazonECR} client are optional and will use reasonable defaults
+   *
+   * <p>All values except the {@link AmazonECR} client are optional and will use reasonable defaults
    * if not supplied.
    */
   public static class Builder {
@@ -244,21 +251,21 @@ public class AwsEcrRegistryAuthSupplier implements RegistryAuthSupplier {
     private int maxRetries = 1;
 
     /**
-     * @return The ECR client to use
+     * @return The ECR client to use.
      */
     public AmazonECR getClient() {
       return client;
     }
 
     /**
-     * @param client The AWS ECR client to use
+     * @param client The AWS ECR client to use.
      */
     public void setClient(AmazonECR client) {
       this.client = client;
     }
 
     /**
-     * @param client The AWS ECR client to use
+     * @param client The AWS ECR client to use.
      * @return fluent interface
      */
     public Builder withClient(AmazonECR client) {
@@ -267,21 +274,21 @@ public class AwsEcrRegistryAuthSupplier implements RegistryAuthSupplier {
     }
 
     /**
-     * @return The base 64 decoder to use
+     * @return The base 64 decoder to use.
      */
     public Base64Decoder getDecoder() {
       return decoder;
     }
 
     /**
-     * @param decoder The base 64 decoder to use
+     * @param decoder The base 64 decoder to use.
      */
     public void setDecoder(Base64Decoder decoder) {
       this.decoder = decoder;
     }
 
     /**
-     * @param decoder The base 64 decoder to use
+     * @param decoder The base 64 decoder to use.
      * @return fluent interface
      */
     public Builder withDecoder(Base64Decoder decoder) {
@@ -320,14 +327,16 @@ public class AwsEcrRegistryAuthSupplier implements RegistryAuthSupplier {
     }
 
     /**
-     * @param retryBackoffMillis The number of milliseconds to wait between retries after server errors
+     * @param retryBackoffMillis The number of milliseconds to wait between retries after server
+     *                           errors.
      */
     public void setRetryBackoffMillis(long retryBackoffMillis) {
       this.retryBackoffMillis = retryBackoffMillis;
     }
 
     /**
-     * @param retryBackoffMillis The number of milliseconds to wait between retries after server errors
+     * @param retryBackoffMillis The number of milliseconds to wait between retries after server
+     *                           errors.
      * @return fluent interface
      */
     public Builder withRetryBackoffMillis(long retryBackoffMillis) {
@@ -336,21 +345,23 @@ public class AwsEcrRegistryAuthSupplier implements RegistryAuthSupplier {
     }
 
     /**
-     * @return The max number of retries that will be attempted after an initial request (default 1)
+     * @return The max number of retries that will be attempted after an initial request.
      */
     public int getMaxRetries() {
       return maxRetries;
     }
 
     /**
-     * @param maxRetries The max number of retries that will be attempted after an initial request (default 1)
+     * @param maxRetries The max number of retries that will be attempted after an initial request
+     *                   (default 1).
      */
     public void setMaxRetries(int maxRetries) {
       this.maxRetries = maxRetries;
     }
 
     /**
-     * @param maxRetries The max number of retries that will be attempted after an initial request (default 1)
+     * @param maxRetries The max number of retries that will be attempted after an initial request
+     *                   (default 1).
      * @return fluent interface
      */
     public Builder withMaxRetries(int maxRetries) {
@@ -367,7 +378,7 @@ public class AwsEcrRegistryAuthSupplier implements RegistryAuthSupplier {
   }
 
   /**
-   * Interface to make testing code that calls time-related functions easier
+   * Interface to make testing code that calls time-related functions easier.
    */
   public interface Sleep {
     void sleepMs(long millis);
@@ -396,7 +407,7 @@ public class AwsEcrRegistryAuthSupplier implements RegistryAuthSupplier {
   }
 
   /**
-   * Interface for decoding base 64 text into a plain-text string
+   * Interface for decoding base 64 text into a plain-text string.
    */
   public interface Base64Decoder {
     String decode(String encoded);
